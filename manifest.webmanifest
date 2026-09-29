@@ -1,0 +1,16 @@
+{
+  "name": "POS Seblak Angkringan Prasmanan",
+  "short_name": "POS Seblak",
+  "description": "Kasir offline: menu, bayar, struk, laporan, printer thermal",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12100e",
+  "theme_color": "#f97316",
+  "lang": "id",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
