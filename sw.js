@@ -1,5 +1,5 @@
 /* POS Seblak — service worker: offline-first */
-const CACHE='pos-seblak-v4';
+const CACHE='pos-seblak-v5';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
