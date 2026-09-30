@@ -147,6 +147,19 @@ main{flex:1;overflow:hidden;position:relative}
 .menu-edit .mt{font-size:12px;color:var(--dim)}
 .menu-edit .ed{font-size:18px;padding:7px 10px;border-radius:9px;background:var(--panel2);border:1px solid var(--line)}
 .menu-edit .dl{font-size:18px;padding:7px 10px;border-radius:9px;background:#3b1d1d;border:1px solid #5c2b2b;color:#fca5a5}
+/* gambar item */
+.item .emoji{position:relative}
+.item .emoji.hasimg{display:flex;align-items:center;justify-content:center;height:58px;width:100%;background:var(--panel2);border-radius:9px;overflow:hidden}
+.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px}
+.menu-edit .th{position:relative;width:42px;height:42px;border-radius:9px;overflow:hidden;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.menu-edit .th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgrow{display:flex;gap:12px;align-items:center}
+.imgprev{width:76px;height:76px;border-radius:12px;border:1px dashed var(--line);background:var(--panel2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--dim);flex:none}
+.imgprev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.imgbtns{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
+.imgbtns button{padding:10px 11px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--txt);text-align:left;cursor:pointer}
+.imgbtns .rm{color:#fca5a5;border-color:#5c2b2b}
+.imghint{font-size:10.5px;color:var(--dim);line-height:1.45}
 
 /* ---- nav + toast ---- */
 nav{display:flex;background:var(--panel);border-top:1px solid var(--line);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
@@ -304,6 +317,17 @@ nav button.on{color:var(--accent)}
       <div class="field"><label>Emoji</label><input id="eEm" placeholder="🌶️"></div>
       <div class="field"><label>Stok (opsional, 0 = habis)</label><input id="eSt" type="number" inputmode="numeric" min="0" placeholder="—"></div>
     </div>
+    <div class="field"><label>Gambar item (opsional)</label>
+      <div class="imgrow">
+        <div class="imgprev"><span id="eImgPh">🍽️</span><img id="eImgTag" style="display:none" alt=""></div>
+        <div class="imgbtns">
+          <button onclick="document.getElementById('eImgFile').click()">📷 Pilih gambar</button>
+          <button class="rm" onclick="clearImg()">🗑 Hapus gambar</button>
+          <div class="imghint">Otomatis dipotong &amp; dikompres biar ringan disimpan.</div>
+        </div>
+      </div>
+      <input type="file" id="eImgFile" accept="image/*" class="hidden" onchange="pickImg(event)">
+    </div>
     <div class="mbtns">
       <button class="x" onclick="hide('editOverlay')">Batal</button>
       <button class="go" onclick="saveMenuEdit()">Simpan</button>
@@ -344,7 +368,7 @@ let cart=[], activeCat='Semua', query='', orderSeq=nextSeq(), disc=0, payMethod=
 let repMode='hari', setMode='menu';
 
 function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??structuredClone(d)}catch(e){return structuredClone(d)}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast('Gagal menyimpan: '+e.message)}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Gagal menyimpan: '+e.message);return false}}
 function nextSeq(){return (txs.reduce((m,t)=>Math.max(m,t.seq||0),0)||0)+1}
 function rp(n){return 'Rp '+Math.round(n||0).toLocaleString('id-ID')}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -381,7 +405,7 @@ function renderGrid(){
  if(!list.length){g.innerHTML='<div class="empty-mini" style="grid-column:1/-1">Tidak ada menu cocok dengan pencarian.</div>';return}
  g.innerHTML=list.map(m=>{const out=m.st!==undefined&&m.st<=0;
   return `<button class="item ${out?'out':''}" data-id="${m.id}" ${out?'disabled':''} onclick="addToCart(${m.id})">
-   <span class="emoji">${m.e||'🍽️'}</span>
+   <span class="emoji ${IMGOK(m.img)?'hasimg':''}">${m.e||'🍽️'}${IMGOK(m.img)?`<img class="thumb" src="${m.img}" alt="" onerror="this.style.display='none'">`:''}</span>
    <span class="nm">${esc(m.n)}</span>
    <span class="pr money">${rp(m.p)}</span>
    <span class="stk">${m.st===undefined?'tap untuk +':(out?'HABIS':'sisa '+m.st)}</span>
@@ -725,7 +749,7 @@ function renderSet(){
  const b=document.getElementById('setBody');
  if(setMode==='menu'){
   b.innerHTML=`<div class="tool-row" style="margin-top:0;margin-bottom:14px"><button class="pri" onclick="openEdit(null)">+ Tambah Menu</button><button onclick="exportMenuJSON()">⬇ Backup Menu</button></div>`+
-  menu.map(m=>`<div class="menu-edit"><div class="info"><div class="nm">${m.e||'🍽️'} ${esc(m.n)}</div>
+  menu.map(m=>`<div class="menu-edit"><span class="th">${m.e||'🍽️'}${IMGOK(m.img)?`<img src="${m.img}" alt="" onerror="this.style.display='none'">`:''}</span><div class="info"><div class="nm">${esc(m.n)}</div>
    <div class="mt">${rp(m.p)} · ${esc(m.c||'Lain')}${m.st!==undefined?' · stok '+m.st:''}</div></div>
    <button class="ed" onclick="openEdit(${m.id})">✏️</button><button class="dl" onclick="delMenu(${m.id})">🗑</button></div>`).join('');
  } else if(setMode==='toko'){
@@ -800,11 +824,32 @@ function saveSettings(){settings.shop=document.getElementById('sShop').value.tri
  settings.footer=document.getElementById('sFoot').value.trim();save(LS_SET,settings);toast('Pengaturan toko disimpan')}
 function buildPreview(){return buildReceipt({seq:orderSeq,date:todayKey(),time:new Date().toTimeString().slice(0,5),
  items:[{n:'Seblak Ceker',p:15000,q:2},{n:'Es Teh',p:4000,q:2}],sub:38000,disc:0,total:38000,method:'Tunai',paid:50000,change:12000})}
+/* ==== GAMBAR ITEM: pilih → kompres → simpan sebagai data URL ==== */
+let editImg=null;
+function IMGOK(u){return typeof u==='string'&&/^data:image\/(jpeg|png|webp);base64,/.test(u)}
+function updImgPrev(){const t=document.getElementById('eImgTag'),ph=document.getElementById('eImgPh');if(!t)return;
+ if(editImg){t.src=editImg;t.style.display='block';ph.style.display='none'}
+ else{t.removeAttribute('src');t.style.display='none';ph.style.display='block'}}
+function pickImg(ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';
+ if(!f)return;
+ if(!f.type||!f.type.startsWith('image/')){toast('File bukan gambar');return}
+ const img=new Image(),u=URL.createObjectURL(f);
+ img.onload=()=>{const MAX=480;let w=img.naturalWidth,h=img.naturalHeight;
+  const s=Math.min(1,MAX/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  cv.getContext('2d').drawImage(img,0,0,w,h);
+  try{editImg=cv.toDataURL('image/jpeg',0.75)}catch(e){toast('Gagal memproses gambar');return}
+  finally{URL.revokeObjectURL(u)}
+  updImgPrev();toast('Gambar siap ('+Math.round(editImg.length/1024)+' KB) — jangan lupa Simpan')};
+ img.onerror=()=>{URL.revokeObjectURL(u);toast('Gambar gagal dibaca')};
+ img.src=u}
+function clearImg(){editImg=null;updImgPrev();toast('Gambar dihapus — klik Simpan untuk menyimpan')}
 function openEdit(id){editingId=id;const m=id?menu.find(x=>x.id===id):null;
  document.getElementById('editTitle').textContent=m?'Ubah Menu':'Tambah Menu';
  document.getElementById('eNm').value=m?m.n:'';document.getElementById('ePr').value=m?m.p:'';
  document.getElementById('eCat').value=m?(m.c||''):'';document.getElementById('eEm').value=m?(m.e||''):'';
  document.getElementById('eSt').value=m&&m.st!==undefined?m.st:'';
+ editImg=m&&m.img?m.img:null;updImgPrev();
  show('editOverlay');setTimeout(()=>document.getElementById('eNm').focus(),80)}
 function saveMenuEdit(){
  const n=document.getElementById('eNm').value.trim(),p=Number(document.getElementById('ePr').value)||0;
@@ -812,9 +857,13 @@ function saveMenuEdit(){
  if(p<=0){toast('Harga harus > 0');return}
  const c=document.getElementById('eCat').value.trim()||'Lain',e=document.getElementById('eEm').value.trim()||'🍽️';
  const sv=document.getElementById('eSt').value, st=sv===''?undefined:Number(sv);
- if(editingId){const m=menu.find(x=>x.id===editingId);Object.assign(m,{n,p,c,e});if(st!==undefined)m.st=st;else delete m.st}
- else{const id=menu.reduce((m,x)=>Math.max(m,x.id),0)+1;const it={id,n,p,c,e};if(st!==undefined)it.st=st;menu.push(it)}
- save(LS_MENU,menu);hide('editOverlay');renderCats();renderGrid();renderSet();toast(editingId?'Menu diubah':'Menu ditambahkan');editingId=null}
+ if(editingId){const m=menu.find(x=>x.id===editingId);Object.assign(m,{n,p,c,e});
+  if(editImg)m.img=editImg;else delete m.img;
+  if(st!==undefined)m.st=st;else delete m.st}
+ else{const id=menu.reduce((m,x)=>Math.max(m,x.id),0)+1;const it={id,n,p,c,e};
+  if(editImg)it.img=editImg;if(st!==undefined)it.st=st;menu.push(it)}
+ if(!save(LS_MENU,menu)){toast('Gagal simpan — storage penuh? Coba gambar lebih kecil');return}
+ editImg=null;hide('editOverlay');renderCats();renderGrid();renderSet();toast(editingId?'Menu diubah':'Menu ditambahkan');editingId=null}
 function delMenu(id){const m=menu.find(x=>x.id===id);if(!m)return;
  if(!confirm('Hapus "'+m.n+'" dari menu?'))return;
  menu=menu.filter(x=>x.id!==id);save(LS_MENU,menu);renderCats();renderGrid();renderSet();toast('Menu dihapus')}
