@@ -232,6 +232,7 @@ nav button.on{color:var(--accent)}
   <section class="view" id="v-laporan">
     <div class="tabbar">
       <button class="on" data-rep="hari" onclick="setRep('hari',this)">Hari Ini</button>
+      <button data-rep="bulan" onclick="setRep('bulan',this)">Bulan</button>
       <button data-rep="riwayat" onclick="setRep('riwayat',this)">Riwayat</button>
       <button data-rep="menu" onclick="setRep('menu',this)">Terlaris</button>
     </div>
@@ -365,7 +366,7 @@ const DEFAULT_MENU=[
 const DEFAULT_SET={shop:'Seblak Angkringan Prasmanan',addr:'Jl. Angkringan No. 12',phone:'0812-0000-0000',footer:'Terima kasih sudah makan di sini! 🌶️',ppn:0};
 let menu=load(LS_MENU,DEFAULT_MENU), txs=load(LS_TX,[]), settings=load(LS_SET,DEFAULT_SET);
 let cart=[], activeCat='Semua', query='', orderSeq=nextSeq(), disc=0, payMethod='Tunai', cashStr='', editingId=null;
-let repMode='hari', setMode='menu';
+let repMode='hari', setMode='menu', repMonth=todayKey().slice(0,7);
 
 function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??structuredClone(d)}catch(e){return structuredClone(d)}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Gagal menyimpan: '+e.message);return false}}
@@ -704,6 +705,34 @@ function renderReport(){
   <div class="sec-title">Transaksi Hari Ini</div>
   ${day.length?`<table class="tbl"><tr><th>#</th><th>Jam</th><th>Item</th><th class="n">Total</th></tr>${day.slice().reverse().map(x=>`<tr><td>${String(x.seq).padStart(4,'0')}</td><td class="dim">${x.time}</td><td class="dim">${x.items.reduce((s,i)=>s+i.q,0)} porsi · ${x.method}</td><td class="n money">${rp(x.total)}</td></tr>`).join('')}</table>`:''}
   <div class="tool-row"><button class="pri" onclick="exportCSV()">⬇ Export CSV</button><button onclick="printReportPaper()">🖨️ Cetak Laporan</button></div>`;
+ } else if(repMode==='bulan'){
+  const months={};txs.forEach(x=>{const m=x.date.slice(0,7);months[m]=months[m]||{n:0,rev:0};months[m].n++;months[m].rev+=x.total});
+  if(!months[repMonth])months[repMonth]={n:0,rev:0};
+  const mT=txs.filter(x=>x.date.slice(0,7)===repMonth);
+  const rev=mT.reduce((s,x)=>s+x.total,0), items=mT.reduce((s,x)=>s+x.items.reduce((a,i)=>a+i.q,0),0);
+  const discSum=mT.reduce((s,x)=>s+x.disc,0);
+  const byM={};mT.forEach(x=>byM[x.method]=(byM[x.method]||0)+x.total);
+  const agg={};mT.forEach(x=>x.items.forEach(i=>{agg[i.n]=agg[i.n]||{q:0,amt:0};agg[i.n].q+=i.q;agg[i.n].amt+=i.p*i.q}));
+  const top=Object.entries(agg).sort((a,b)=>b[1].q-a[1].q);
+  const days={};mT.forEach(x=>{days[x.date]=days[x.date]||{n:0,rev:0};days[x.date].n++;days[x.date].rev+=x.total});
+  const dRows=Object.entries(days).sort((a,b)=>b[0].localeCompare(a[0]));
+  const opts=Object.keys(months).sort().reverse();
+  b.innerHTML=`
+  <div class="tool-row" style="margin-top:0;margin-bottom:12px"><select onchange="repMonth=this.value;renderReport()" style="flex:1;padding:11px;border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt)">${opts.map(m=>`<option value="${m}" ${m===repMonth?'selected':''}>${m} — ${months[m].n} trx · ${rp(months[m].rev)}</option>`).join('')}</select></div>
+  <div class="stats">
+    <div class="stat"><div class="k">Omzet ${repMonth}</div><div class="v acc money">${rp(rev)}</div></div>
+    <div class="stat"><div class="k">Transaksi</div><div class="v">${mT.length}</div></div>
+    <div class="stat"><div class="k">Porsi Terjual</div><div class="v ok">${items}</div></div>
+    <div class="stat"><div class="k">Rata-rata / Trx</div><div class="v money">${rp(mT.length?rev/mT.length:0)}</div></div>
+  </div>
+  <div class="sec-title">Per Metode Bayar</div>
+  ${Object.keys(byM).length?`<table class="tbl"><tr><th>Metode</th><th class="n">Nominal</th></tr>${Object.entries(byM).map(([k,v])=>`<tr><td>${k}</td><td class="n money">${rp(v)}</td></tr>`).join('')}</table>`:'<div class="empty-mini">Belum ada transaksi bulan ini.</div>'}
+  <div class="sec-title">Menu Terlaris Bulan Ini</div>
+  ${top.length?`<table class="tbl"><tr><th>Menu</th><th class="n">Qty</th><th class="n">Omzet</th></tr>${top.map(([n,a])=>`<tr><td>${esc(n)}</td><td class="n">${a.q}</td><td class="n money">${rp(a.amt)}</td></tr>`).join('')}</table>`:'<div class="empty-mini">Belum ada data.</div>'}
+  <div class="sec-title">Rekap Harian (${dRows.length} hari aktif)</div>
+  ${dRows.length?`<table class="tbl"><tr><th>Tanggal</th><th class="n">Trx</th><th class="n">Omzet</th></tr>${dRows.map(([d,v])=>`<tr><td>${d}</td><td class="n">${v.n}</td><td class="n money">${rp(v.rev)}</td></tr>`).join('')}</table>`:''}
+  ${discSum?`<div class="row" style="margin-top:12px"><span>Total diskon bulan ini</span><span class="money">− ${rp(discSum)}</span></div>`:''}
+  <div class="tool-row"><button class="pri" onclick="exportCSV()">⬇ Export CSV</button><button onclick="printReportPaper()">🖨️ Cetak Laporan</button></div>`;
  } else if(repMode==='riwayat'){
   const days={};txs.forEach(x=>{days[x.date]=days[x.date]||{n:0,rev:0};days[x.date].n++;days[x.date].rev+=x.total});
   const rows=Object.entries(days).sort((a,b)=>b[0].localeCompare(a[0]));
@@ -721,10 +750,14 @@ function renderReport(){
  }}
 function exportCSV(){
  if(!txs.length){toast('Belum ada transaksi');return}
+ let scope=txs, tag=todayKey();
+ if(repMode==='hari'){scope=txs.filter(x=>x.date===todayKey())}
+ else if(repMode==='bulan'){scope=txs.filter(x=>x.date.slice(0,7)===repMonth);tag=repMonth}
+ if(!scope.length){toast('Tidak ada transaksi di periode ini');return}
  let csv='no,tanggal,jam,metode,item,qty,harga,subtotal,total_transaksi,diskon,bayar,kembalian\n';
- txs.forEach(t=>t.items.forEach(i=>{csv+=[t.seq,t.date,t.time,t.method,'"'+i.n+'"',i.q,i.p,i.p*i.q,t.total,t.disc,t.paid,t.change].join(',')+'\n'}));
+ scope.forEach(t=>t.items.forEach(i=>{csv+=[t.seq,t.date,t.time,t.method,'"'+i.n+'"',i.q,i.p,i.p*i.q,t.total,t.disc,t.paid,t.change].join(',')+'\n'}));
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=u;a.download='penjualan-seblak-'+todayKey()+'.csv';a.click();URL.revokeObjectURL(u);toast('CSV diunduh')}
+ a.href=u;a.download='penjualan-seblak-'+tag+'.csv';a.click();URL.revokeObjectURL(u);toast('CSV: '+scope.length+' trx diunduh')}
 
 function savePS(){save(P_LS,pset)}
 function updatePdot(){const e=document.getElementById('pdot');if(!e)return;
