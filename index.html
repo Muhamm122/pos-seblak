@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>POS — Seblak Angkringan Prasmanan</title>
+<title>POS Seblak Prasmanan</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -195,7 +195,7 @@ nav button.on{color:var(--accent)}
 <div id="app">
 <header>
   <div class="logo">🌶️</div>
-  <div class="brand"><b>Seblak Angkringan</b><span>Prasmanan · POS Kasir</span></div>
+  <div class="brand"><b>POS Seblak Prasmanan</b><span>Prasmanan · POS Kasir</span></div>
   <div id="pdot" class="pdot" title="Printer: belum tersambung" style="margin-left:auto;align-self:center" onclick="go('set');setSet('printer',document.querySelector('[data-set=printer]'))"></div>
   <div class="clock"><b id="clk">00:00:00</b><span id="clkDate">—</span></div>
 </header>
@@ -363,7 +363,7 @@ const DEFAULT_MENU=[
  {id:19,n:'Kerupuk Putih',p:5000,c:'Snack',e:'🍘'},
  {id:20,n:'Cireng Bumbu Rujak',p:9000,c:'Snack',e:'🥟'}
 ];
-const DEFAULT_SET={shop:'Seblak Angkringan Prasmanan',addr:'Jl. Angkringan No. 12',phone:'0812-0000-0000',footer:'Terima kasih sudah makan di sini! 🌶️',ppn:0};
+const DEFAULT_SET={shop:'POS Seblak Prasmanan',addr:'Jl. Angkringan No. 12',phone:'0812-0000-0000',footer:'Terima kasih sudah makan di sini! 🌶️',ppn:0};
 let menu=load(LS_MENU,DEFAULT_MENU), txs=load(LS_TX,[]), settings=load(LS_SET,DEFAULT_SET);
 let cart=[], activeCat='Semua', query='', orderSeq=nextSeq(), disc=0, payMethod='Tunai', cashStr='', editingId=null;
 let repMode='hari', setMode='menu', repMonth=todayKey().slice(0,7);
@@ -851,7 +851,7 @@ function renderSet(){
    <button class="danger" onclick="resetAll()">Reset Total (semua data)</button>
   </div>
   <div class="sec-title">Tentang</div>
-  <p style="font-size:13px;color:var(--dim);line-height:1.6">POS Seblak Angkringan Prasmanan v1.0 — offline-first. Shortcut: <b style="color:var(--txt)">F2</b> fokus cari, <b style="color:var(--txt)">F4</b> bayar, <b style="color:var(--txt)">Esc</b> tutup modal.</p>`}}
+  <p style="font-size:13px;color:var(--dim);line-height:1.6">POS Seblak Prasmanan v1.0 — offline-first. Shortcut: <b style="color:var(--txt)">F2</b> fokus cari, <b style="color:var(--txt)">F4</b> bayar, <b style="color:var(--txt)">Esc</b> tutup modal.</p>`}}
 function saveSettings(){settings.shop=document.getElementById('sShop').value.trim()||settings.shop;
  settings.addr=document.getElementById('sAddr').value.trim();settings.phone=document.getElementById('sPhone').value.trim();
  settings.footer=document.getElementById('sFoot').value.trim();save(LS_SET,settings);toast('Pengaturan toko disimpan')}
@@ -930,7 +930,7 @@ document.getElementById('editOverlay').addEventListener('click',e=>{if(e.target.
 /* ================= INIT ================= */
 renderCats();renderGrid();renderCart();updatePdot();
 if('storage' in window)window.addEventListener('storage',e=>{if(e.key===LS_TX){txs=load(LS_TX,txs);orderSeq=nextSeq();renderCart()}});
-console.log('%cPOS Seblak Angkringan v1.0 siap','color:#f97316;font-weight:bold');
+console.log('%cPOS Seblak Prasmanan v1.0 siap','color:#f97316;font-weight:bold');
 /* PWA: service worker cuma di http(s) — file:// tetap jalan penuh tanpa SW */
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.protocol==='http:')){
  navigator.serviceWorker.register('sw.js').then(()=>console.log('SW aktif — mode offline PWA')).catch(e=>console.log('SW gagal:',e.message));
